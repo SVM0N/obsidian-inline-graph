@@ -28,10 +28,17 @@ node2:{name="Name2",color="blue",text="hello world2"}
 <edges> : [ <node metadata> ]
 ```
 
-**Edges** are pairs of node ids joined by `-`, separated by `;` (newlines are fine too):
+**Edges** are pairs of node ids joined by `-` (undirected) or `->` (directed, rendered with an arrowhead), separated by `;` (newlines are fine too):
 
 ```
-a-b; b-c; a-c
+a-b; b->c; a-c
+```
+
+**Height** of the graph defaults to 320px. Override it per block with a directive on the first line:
+
+```
+height=480
+a-b; b-c
 ```
 
 **Node metadata** is optional, lives inside `[ ... ]`, one entry per node:

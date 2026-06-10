@@ -27,7 +27,8 @@ Three sections, top to bottom:
 
 Regex-based, intentionally forgiving. Splits the block at the first `[` into an edge part and a metadata part.
 
-- Edge regex: `([A-Za-z0-9_]+)\s*-\s*([A-Za-z0-9_]+)` applied globally. Separators between pairs (`;`, newlines, whitespace) are never matched, so they need no handling.
+- Optional first-line directive `height=NNN` is consumed before anything else and returned as `height` (null if absent). It must be alone on the first line; `height=` anywhere else is treated as ordinary content.
+- Edge regex: `([A-Za-z0-9_]+)\s*(->|-)\s*([A-Za-z0-9_]+)` applied globally; `->` marks a directed edge (the alternation tries `->` first, so ordering matters). Separators between pairs (`;`, newlines, whitespace) are never matched, so they need no handling.
 - Metadata regex: `id:{...}` entries, with `key="value"` pairs inside.
 - Every id seen in either section becomes a node. Defaults: `name` = id, `color` = empty string (renderer falls back to `var(--interactive-accent)`), `text` = empty (no tooltip).
 - Throws if zero nodes parse; the processor catches and renders the error message in a `<pre>`.
@@ -36,7 +37,8 @@ Known limitation: ids are `\w`-only, so no spaces/CJK in ids (use `name` for dis
 
 ### 2. Renderer + simulation (`render(container, nodes, edges)`)
 
-- Builds one `<svg>` (100% width, fixed 320px height, constant `HEIGHT`) plus an absolutely positioned tooltip `<div>` inside the block container.
+- Builds one `<svg>` (100% width; height = per-block `height` directive or the `HEIGHT` constant, 320px) plus an absolutely positioned tooltip `<div>` inside the block container.
+- A `<defs><marker>` arrowhead is created per block with a randomized id (`url(#id)` resolves document-wide, so a fixed id would clash when a note has several graphs). Directed lines get `marker-end`, and `draw()` shortens their target endpoint by `R + 3` so the arrowhead sits at the circle's edge instead of underneath it.
 - Initial node positions on a ring to avoid degenerate overlaps.
 - Simulation per tick:
   - Pairwise repulsion, force `2500 / d²` (constant inline)
@@ -58,14 +60,13 @@ Known limitation: ids are `\w`-only, so no spaces/CJK in ids (use `name` for dis
 
 - No settings tab. All tuning is constants in `main.js`.
 - No click action on nodes.
-- No directed edges / arrowheads.
 - No `styles.css` (everything is inline styles or SVG attributes; fine at this size).
 
 ## Likely next features, in order of ask
 
 1. **Click to open note**: in the node setup, add a `click` handler that calls `app.workspace.openLinkText(n.name, '')` (or a dedicated `link="..."` property). Guard against firing after a drag (track movement distance on pointerup). ~10 lines.
-2. **Directed edges**: accept `a->b` in the edge regex, add an SVG `<marker>` arrowhead, set `marker-end` on those lines.
-3. **Per-block height**: support a first-line directive like `height=480`.
+
+Implemented in 0.2.0: directed edges (`a->b`) and the per-block `height=NNN` directive.
 
 ## Release process (if submitting to the community plugin store)
 

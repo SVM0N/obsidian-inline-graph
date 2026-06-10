@@ -5,6 +5,16 @@ const { Plugin } = require('obsidian');
 /* ---------- parsing ---------- */
 
 function parseGr(source) {
+  // optional first-line directive: height=480
+  let height = null;
+  const nl = source.indexOf('\n');
+  const firstLine = nl === -1 ? source : source.slice(0, nl);
+  const hm = firstLine.match(/^\s*height\s*=\s*(\d+)\s*$/);
+  if (hm) {
+    height = parseInt(hm[1], 10);
+    source = nl === -1 ? '' : source.slice(nl + 1);
+  }
+
   let edgePart = source;
   let metaPart = '';
 
@@ -18,12 +28,13 @@ function parseGr(source) {
 
   const edges = [];
   const ids = new Set();
-  const edgeRe = /([A-Za-z0-9_]+)\s*-\s*([A-Za-z0-9_]+)/g;
+  // `a-b` is undirected, `a->b` is directed
+  const edgeRe = /([A-Za-z0-9_]+)\s*(->|-)\s*([A-Za-z0-9_]+)/g;
   let m;
   while ((m = edgeRe.exec(edgePart))) {
-    edges.push({ source: m[1], target: m[2] });
+    edges.push({ source: m[1], target: m[3], directed: m[2] === '->' });
     ids.add(m[1]);
-    ids.add(m[2]);
+    ids.add(m[3]);
   }
 
   const meta = {};
@@ -46,7 +57,7 @@ function parseGr(source) {
     text: (meta[id] && meta[id].text) || '',
   }));
 
-  return { nodes, edges };
+  return { nodes, edges, height };
 }
 
 /* ---------- rendering ---------- */
@@ -61,16 +72,34 @@ function svgEl(tag, attrs) {
   return e;
 }
 
-function render(container, nodes, edges) {
+function render(container, nodes, edges, blockHeight) {
   container.empty();
   container.style.position = 'relative';
 
   const width = Math.max(container.clientWidth, 300);
-  const height = HEIGHT;
+  const height = blockHeight || HEIGHT;
 
   const svg = svgEl('svg', { width: '100%', height });
   svg.style.display = 'block';
   container.appendChild(svg);
+
+  // arrowhead marker for directed edges (unique id per block)
+  const markerId = 'gr-arrow-' + Math.random().toString(36).slice(2, 8);
+  const defs = svgEl('defs', {});
+  const marker = svgEl('marker', {
+    id: markerId,
+    viewBox: '0 0 10 10',
+    refX: 9,
+    refY: 5,
+    markerWidth: 7,
+    markerHeight: 7,
+    orient: 'auto',
+  });
+  marker.appendChild(
+    svgEl('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'var(--background-modifier-border)' })
+  );
+  defs.appendChild(marker);
+  svg.appendChild(defs);
 
   // tooltip
   const tip = container.createDiv();
@@ -100,7 +129,7 @@ function render(container, nodes, edges) {
   });
   const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
   const links = edges
-    .map((e) => ({ s: byId[e.source], t: byId[e.target] }))
+    .map((e) => ({ s: byId[e.source], t: byId[e.target], directed: e.directed }))
     .filter((l) => l.s && l.t);
 
   // SVG elements
@@ -109,6 +138,7 @@ function render(container, nodes, edges) {
       stroke: 'var(--background-modifier-border)',
       'stroke-width': 1.5,
     });
+    if (l.directed) line.setAttribute('marker-end', `url(#${markerId})`);
     svg.appendChild(line);
     l.el = line;
     return line;
@@ -220,10 +250,20 @@ function render(container, nodes, edges) {
 
   function draw() {
     links.forEach((l) => {
+      let x2 = l.t.x;
+      let y2 = l.t.y;
+      if (l.directed) {
+        // stop the line at the circle's edge so the arrowhead is visible
+        const dx = l.t.x - l.s.x;
+        const dy = l.t.y - l.s.y;
+        const d = Math.max(Math.hypot(dx, dy), 1);
+        x2 -= (dx / d) * (R + 3);
+        y2 -= (dy / d) * (R + 3);
+      }
       l.el.setAttribute('x1', l.s.x);
       l.el.setAttribute('y1', l.s.y);
-      l.el.setAttribute('x2', l.t.x);
-      l.el.setAttribute('y2', l.t.y);
+      l.el.setAttribute('x2', x2);
+      l.el.setAttribute('y2', y2);
     });
     nodes.forEach((n) => {
       n.g.setAttribute('transform', `translate(${n.x},${n.y})`);
@@ -253,9 +293,9 @@ module.exports = class InlineGraphPlugin extends Plugin {
   onload() {
     this.registerMarkdownCodeBlockProcessor('gr', (source, el) => {
       try {
-        const { nodes, edges } = parseGr(source);
+        const { nodes, edges, height } = parseGr(source);
         // defer one frame so the container has a measurable width
-        requestAnimationFrame(() => render(el, nodes, edges));
+        requestAnimationFrame(() => render(el, nodes, edges, height));
       } catch (e) {
         el.createEl('pre', { text: 'gr error: ' + e.message });
       }
