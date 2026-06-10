@@ -1,0 +1,9 @@
+{
+  "id": "inline-graph",
+  "name": "Inline Graph",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Render inline force-directed node graphs from `gr` code blocks.",
+  "author": "SVM0N",
+  "isDesktopOnly": false
+}
