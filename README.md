@@ -57,6 +57,14 @@ All parts are forgiving: the trailing `:` is optional, metadata is optional, and
 
 Node ids may contain letters, digits, and underscores.
 
+## Screenshots
+
+The block above, as source and as the rendered, draggable graph:
+
+<img src="docs/img/code-block.png" alt="A gr code block in Obsidian's editor" width="600">
+
+<img src="docs/img/graph-render.png" alt="The same block rendered as an interactive force-directed graph" width="400">
+
 ## Install
 
 ### Manual (current method)
