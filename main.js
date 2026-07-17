@@ -74,13 +74,13 @@ function svgEl(tag, attrs) {
 
 function render(container, nodes, edges, blockHeight) {
   container.empty();
-  container.style.position = 'relative';
+  container.classList.add('inline-graph-container');
 
   const width = Math.max(container.clientWidth, 300);
   const height = blockHeight || HEIGHT;
 
   const svg = svgEl('svg', { width: '100%', height });
-  svg.style.display = 'block';
+  svg.classList.add('inline-graph-svg');
   container.appendChild(svg);
 
   // arrowhead marker for directed edges (unique id per block)
@@ -103,20 +103,7 @@ function render(container, nodes, edges, blockHeight) {
 
   // tooltip
   const tip = container.createDiv();
-  Object.assign(tip.style, {
-    position: 'absolute',
-    display: 'none',
-    maxWidth: '260px',
-    padding: '6px 10px',
-    borderRadius: '6px',
-    fontSize: '0.85em',
-    pointerEvents: 'none',
-    zIndex: '10',
-    background: 'var(--background-primary)',
-    border: '1px solid var(--background-modifier-border)',
-    boxShadow: 'var(--shadow-s, 0 2px 8px rgba(0,0,0,0.3))',
-    color: 'var(--text-normal)',
-  });
+  tip.classList.add('inline-graph-tooltip');
 
   // initial positions: ring
   nodes.forEach((n, i) => {
@@ -133,7 +120,7 @@ function render(container, nodes, edges, blockHeight) {
     .filter((l) => l.s && l.t);
 
   // SVG elements
-  const lineEls = links.map((l) => {
+  links.forEach((l) => {
     const line = svgEl('line', {
       stroke: 'var(--background-modifier-border)',
       'stroke-width': 1.5,
@@ -141,13 +128,12 @@ function render(container, nodes, edges, blockHeight) {
     if (l.directed) line.setAttribute('marker-end', `url(#${markerId})`);
     svg.appendChild(line);
     l.el = line;
-    return line;
   });
 
   const accent = 'var(--interactive-accent)';
   nodes.forEach((n) => {
     const g = svgEl('g', {});
-    g.style.cursor = 'grab';
+    g.classList.add('inline-graph-node');
     const c = svgEl('circle', { r: R, fill: n.color || accent });
     const label = svgEl('text', {
       y: R + 14,
@@ -166,21 +152,21 @@ function render(container, nodes, edges, blockHeight) {
       c.setAttribute('r', R * 1.5);
       if (n.text) {
         tip.textContent = n.text;
-        tip.style.display = 'block';
+        tip.classList.add('is-visible');
         tip.style.left = Math.min(n.x + 14, width - 270) + 'px';
         tip.style.top = n.y + 14 + 'px';
       }
     });
     g.addEventListener('pointerleave', () => {
       c.setAttribute('r', R);
-      tip.style.display = 'none';
+      tip.classList.remove('is-visible');
     });
 
     // drag
     g.addEventListener('pointerdown', (ev) => {
       ev.preventDefault();
       g.setPointerCapture(ev.pointerId);
-      g.style.cursor = 'grabbing';
+      g.classList.add('is-dragging');
       n.fixed = true;
       const rect = svg.getBoundingClientRect();
       const move = (e) => {
@@ -191,7 +177,7 @@ function render(container, nodes, edges, blockHeight) {
       };
       const up = (e) => {
         g.releasePointerCapture(e.pointerId);
-        g.style.cursor = 'grab';
+        g.classList.remove('is-dragging');
         n.fixed = false;
         g.removeEventListener('pointermove', move);
         g.removeEventListener('pointerup', up);
@@ -276,12 +262,12 @@ function render(container, nodes, edges, blockHeight) {
       if (!container.isConnected) { running = false; return; }
       tick();
       if (alpha > 0.005 || nodes.some((n) => n.fixed)) {
-        requestAnimationFrame(loop);
+        window.requestAnimationFrame(loop);
       } else {
         running = false;
       }
     };
-    requestAnimationFrame(loop);
+    window.requestAnimationFrame(loop);
   }
 
   start();
@@ -295,10 +281,15 @@ module.exports = class InlineGraphPlugin extends Plugin {
       try {
         const { nodes, edges, height } = parseGr(source);
         // defer one frame so the container has a measurable width
-        requestAnimationFrame(() => render(el, nodes, edges, height));
+        window.requestAnimationFrame(() => render(el, nodes, edges, height));
       } catch (e) {
         el.createEl('pre', { text: 'gr error: ' + e.message });
       }
     });
   }
 };
+
+// Exposed only so the parser can be smoke-tested in plain node (see
+// test/parseGr.test.js); Obsidian only ever uses the default export above
+// (the Plugin subclass), so this static property is invisible to it.
+module.exports.parseGr = parseGr;

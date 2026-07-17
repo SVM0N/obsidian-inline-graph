@@ -1,0 +1,32 @@
+{
+  "name": "obsidian-inline-graph",
+  "version": "0.2.0",
+  "private": true,
+  "description": "An Obsidian plugin that renders interactive, force-directed node graphs inline in your notes from a simple gr code block. Like the native graph view, but for arbitrary ideas you define on the spot, not vault links.",
+  "main": "main.js",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node test/parseGr.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SVM0N/obsidian-inline-graph.git"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "graph"
+  ],
+  "author": "SVM0N",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SVM0N/obsidian-inline-graph/issues"
+  },
+  "homepage": "https://github.com/SVM0N/obsidian-inline-graph#readme",
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.64.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-obsidianmd": "^0.4.1"
+  }
+}

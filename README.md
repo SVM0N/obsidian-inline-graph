@@ -61,11 +61,12 @@ Node ids may contain letters, digits, and underscores.
 
 ### Manual (current method)
 
-1. Download or clone this repo.
-2. Copy the `inline-graph/` subfolder (it contains `manifest.json` and `main.js`) into your vault's plugin directory, so you end up with:
+1. Download `manifest.json`, `main.js`, and `styles.css` from this repo (either clone it, or download all three files from the [latest release](https://github.com/SVM0N/obsidian-inline-graph/releases)).
+2. Create a folder named `inline-graph` inside your vault's plugin directory and place all three files there, so you end up with:
    ```
    YourVault/.obsidian/plugins/inline-graph/manifest.json
    YourVault/.obsidian/plugins/inline-graph/main.js
+   YourVault/.obsidian/plugins/inline-graph/styles.css
    ```
 3. In Obsidian: **Settings → Community plugins**, turn off Restricted mode if needed, hit the reload icon, and enable **Inline Graph**.
 
